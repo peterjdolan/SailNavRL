@@ -1,6 +1,7 @@
 import boat as boat_lib
 import weather as weather_lib
 import gym
+import matplotlib as plt
 import numpy as np
 import geopandas as gpd
 from geopy.distance import great_circle
@@ -19,8 +20,11 @@ class SailingNavigationEnv(gym.Env):
         self.coastlines = gpd.read_file(geojson_filepath)
 
         # Define action and observation space
-        self.action_space = gym.spaces.Box(low=np.array([-np.pi]), high=np.array([np.pi]), dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(3, 2), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=np.array([-np.pi]), high=np.array([np.pi]), dtype=np.float64)
+
+        obs_low = np.array([-90.0, -180.0, -np.pi])
+        obs_high = np.array([90.0, 180.0, np.pi])
+        self.observation_space = gym.spaces.Box(low=obs_low, high=obs_high, dtype=np.float64)
 
         # Define environment parameters
         self.destination = np.array([0.0, 100.0])  # Destination coordinates
@@ -31,13 +35,14 @@ class SailingNavigationEnv(gym.Env):
 
         self.reset()
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         # Reset the environment to the initial state
         initial_position = np.array([0.0, 0.0])
         initial_heading = 0.0
 
         self.boat = boat_lib.Boat(initial_position, initial_heading, self.weather_provider)
         self.steps = 0
+
         return self._get_observation()
 
     def step(self, action):
@@ -77,8 +82,19 @@ class SailingNavigationEnv(gym.Env):
         return (self.steps >= self.max_steps) or (current_distance < 1)
 
     def render(self, mode='human', close=False):
-        # Implement rendering logic if needed
-        pass
+        if not hasattr(self, 'fig'):
+            self.fig, self.ax = plt.subplots()
+            self.ax.set_xlim(-180, 180)
+            self.ax.set_ylim(-90, 90)
+            self.ax.set_aspect('equal', 'box')
+            self.points, = self.ax.plot([], [], 'bo', ms=5)
+
+        x, y = self.boat.position
+        xs, ys = self.points.get_data()
+        xs = np.append(xs, x)
+        ys = np.append(ys, y)
+        self.points.set_data(xs, ys)
+        plt.pause(0.01)
 
     def close(self):
         # Clean up resources if needed
@@ -90,3 +106,8 @@ class SailingNavigationEnv(gym.Env):
             if row['geometry'].contains(point):
                 return False
         return True
+
+gym.envs.registration.register(
+    id='SailingNavigationEnv-v0',
+    entry_point='environment:SailingNavigationEnv',
+)
