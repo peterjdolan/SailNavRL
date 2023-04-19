@@ -2,13 +2,17 @@ import boat as boat_lib
 import gym
 import numpy as np
 from geopy.distance import great_circle
-import numpy as np
+import geopandas as gpd
+from shapely.geometry import Point, LineString
 
 class SailingNavigationEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
+    def __init__(self, geojson_filepath='./ne_110m_coastline.geojson'):
         super(SailingNavigationEnv, self).__init__()
+
+        # Load geographical data
+        self.coastlines = gpd.read_file(geojson_filepath)
 
         # Define action and observation space
         self.action_space = gym.spaces.Box(low=np.array([-np.pi]), high=np.array([np.pi]), dtype=np.float32)
@@ -34,6 +38,12 @@ class SailingNavigationEnv(gym.Env):
 
         # Update the boat state based on the action
         self.boat.update(action, dt)
+
+        # Check for collision with land
+        boat_point = Point(self.boat.position)
+        if not self._is_point_on_water(boat_point):
+            # Implement collision handling logic, e.g., end the episode
+            pass
 
         # Calculate the reward based on the updated state
         reward = self.compute_reward()
@@ -66,3 +76,10 @@ class SailingNavigationEnv(gym.Env):
     def close(self):
         # Clean up resources if needed
         pass
+
+    def _is_point_on_water(self, point):
+        # Check if the given point is on water by looking for intersections with coastlines
+        for _, row in self.coastlines.iterrows():
+            if row['geometry'].contains(point):
+                return False
+        return True

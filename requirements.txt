@@ -2,5 +2,6 @@ fiona
 geopandas
 geopy
 git+https://github.com/openai/gym.git
+pytest
 shapely
 stable-baselines3

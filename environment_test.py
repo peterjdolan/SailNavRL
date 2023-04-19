@@ -1,8 +1,12 @@
+import pytest
+
 import boat as boat_lib
 import environment
 
 import numpy as np
 from geopy.distance import great_circle
+from shapely.geometry import Point
+
 
 def test_boat_update():
     # Test the Boat update method
@@ -94,9 +98,12 @@ def test_environment_reset():
     assert np.allclose(initial_observation[1], expected_heading), f"Expected {expected_heading}, got {initial_observation[1]}"
     assert np.allclose(initial_observation[2], expected_wind_velocity), f"Expected {expected_wind_velocity}, got {initial_observation[2]}"
 
-# Run the tests
-test_boat_update()
-test_environment_step()
-test_environment_reset()
+def test_is_point_on_water():
+    env = environment.SailingNavigationEnv("./ne_50m_coastline.geojson")
 
-print("All tests passed!")
+    # Points known to be on land and water
+    land_point = Point(-98.5795, 39.8283)  # Geographic center of the contiguous United States
+    water_point = Point(0, 0)  # Atlantic Ocean
+
+    assert env._is_point_on_water(water_point), "Water point should be on water"
+    assert not env._is_point_on_water(land_point), "Land point should not be on water"
