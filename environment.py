@@ -1,14 +1,18 @@
 import boat as boat_lib
+import weather as weather_lib
 import gym
 import numpy as np
-from geopy.distance import great_circle
 import geopandas as gpd
-from shapely.geometry import Point, LineString
+from geopy.distance import great_circle
+from shapely.geometry import Point
+from weather import MockWeatherProvider
 
 class SailingNavigationEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, geojson_filepath='./ne_110m_coastline.geojson'):
+    def __init__(self,
+                 geojson_filepath='./ne_110m_coastline.geojson',
+                 weather_provider=weather_lib.MockWeatherProvider()):
         super(SailingNavigationEnv, self).__init__()
 
         # Load geographical data
@@ -22,14 +26,17 @@ class SailingNavigationEnv(gym.Env):
         self.destination = np.array([0.0, 100.0])  # Destination coordinates
         self.max_steps = 200  # Maximum steps per episode
 
+        # Initialize the weather provider
+        self.weather_provider = weather_provider
+
         self.reset()
 
     def reset(self):
         # Reset the environment to the initial state
         initial_position = np.array([0.0, 0.0])
         initial_heading = 0.0
-        wind_velocity = np.array([0.0, 0.0])
-        self.boat = boat_lib.Boat(initial_position, initial_heading, wind_velocity)
+
+        self.boat = boat_lib.Boat(initial_position, initial_heading, self.weather_provider)
         self.steps = 0
         return self._get_observation()
 
