@@ -63,3 +63,35 @@ class MockWeatherProvider(WeatherProvider):
             longitude=slice(min_corner.x, max_corner.x)
         )
         return region_forecast
+
+
+class ConstantWindWeatherProvider(WeatherProvider):
+    def __init__(self, u_wind, v_wind, temperature=20):
+        self.u_wind = u_wind
+        self.v_wind = v_wind
+        self.temperature = temperature
+
+    def get_current_weather(self, point):
+        return {
+            'u_wind': self.u_wind,
+            'v_wind': self.v_wind,
+            'temperature': self.temperature
+        }
+
+    def get_weather_forecast(self, min_corner, max_corner, resolution=0.25):
+        lat_range = np.arange(min_corner.y, max_corner.y, resolution)
+        lon_range = np.arange(min_corner.x, max_corner.x, resolution)
+
+        data = {
+            'u_wind': (['latitude', 'longitude'], np.full((len(lat_range), len(lon_range)), self.u_wind)),
+            'v_wind': (['latitude', 'longitude'], np.full((len(lat_range), len(lon_range)), self.v_wind)),
+            'temperature': (['latitude', 'longitude'], np.full((len(lat_range), len(lon_range)), self.temperature)),
+        }
+
+        coords = {
+            'latitude': lat_range,
+            'longitude': lon_range,
+        }
+
+        return xr.Dataset(data, coords)
+

@@ -5,7 +5,7 @@ import numpy as np
 import geopandas as gpd
 from geopy.distance import great_circle
 from shapely.geometry import Point
-from weather import MockWeatherProvider
+
 
 class SailingNavigationEnv(gym.Env):
     metadata = {'render.modes': ['human']}
